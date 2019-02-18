@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                         HealthReportEntry entry;
                         try
                         {
-                            var result = await healthCheck.CheckHealthAsync(context, cancellationToken);
+                            var result = await healthCheck.CheckHealthAsync(context, cancellationToken).ConfigureAwait(false);
                             var duration = stopwatch.GetElapsedTime();
 
                             entry = new HealthReportEntry(
