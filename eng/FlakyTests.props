@@ -1,9 +1,0 @@
-<Project>
-  <PropertyGroup>
-      <_FlakyRunAdditionalArgs>-trait "Flaky:All=true" -trait "Flaky:AzP:All=true" -trait "Flaky:AzP:OS:$(AGENT_OS)=true"</_FlakyRunAdditionalArgs>
-      <_NonFlakyRunAdditionalArgs>-notrait "Flaky:All=true" -notrait "Flaky:AzP:All=true" -notrait "Flaky:AzP:OS:$(AGENT_OS)=true"</_NonFlakyRunAdditionalArgs>
-
-      <TestRunnerAdditionalArguments Condition="'$(RunFlakyTests)' == ''">$(_NonFlakyRunAdditionalArgs)</TestRunnerAdditionalArguments>
-      <TestRunnerAdditionalArguments Condition="'$(RunFlakyTests)' == 'true'">$(_FlakyRunAdditionalArgs)</TestRunnerAdditionalArguments>
-  </PropertyGroup>
-</Project>
