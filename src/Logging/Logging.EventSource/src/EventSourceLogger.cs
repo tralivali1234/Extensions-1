@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -92,7 +93,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 if (exception != null)
                 {
                     var exceptionInfo = GetExceptionInfo(exception);
-                    var exceptionInfoData = new []
+                    var exceptionInfoData = new[]
                     {
                         new KeyValuePair<string, string>("TypeName", exceptionInfo.TypeName),
                         new KeyValuePair<string, string>("Message", exceptionInfo.Message),
@@ -178,7 +179,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// 'serializes' a given exception into an ExceptionInfo (that EventSource knows how to serialize)
         /// </summary>
-        /// <param name="exception"></param>
+        /// <param name="exception">The exception to get information for.</param>
         /// <returns>ExceptionInfo object represending a .NET Exception</returns>
         /// <remarks>ETW does not support a concept of a null value. So we use an un-initialized object if there is no exception in the event data.</remarks>
         private ExceptionInfo GetExceptionInfo(Exception exception)
@@ -207,19 +208,24 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         private string ToJson(IReadOnlyList<KeyValuePair<string, string>> keyValues)
         {
-            var arrayBufferWriter = new ArrayBufferWriter<byte>();
-            var writer = new Utf8JsonWriter(arrayBufferWriter);
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
 
             writer.WriteStartObject();
             foreach (var keyValue in keyValues)
             {
-                writer.WriteString(keyValue.Key, keyValue.Value, true);
+                writer.WriteString(keyValue.Key, keyValue.Value);
             }
             writer.WriteEndObject();
 
-            writer.Flush(true);
+            writer.Flush();
 
-            return Encoding.UTF8.GetString(arrayBufferWriter.WrittenMemory.ToArray());
+            if (!stream.TryGetBuffer(out var buffer))
+            {
+                buffer = new ArraySegment<byte>(stream.ToArray());
+            }
+
+            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
         }
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Xunit.Sdk;
 
-namespace Microsoft.AspNetCore.Testing.xunit
+namespace Microsoft.AspNetCore.Testing
 {
     /// <summary>
     /// Marks a test as "Flaky" so that the build will sequester it and ignore failures.
@@ -49,8 +49,8 @@ namespace Microsoft.AspNetCore.Testing.xunit
     /// to <c>xunit.console.exe</c>. Similarly, it can run only flaky tests using <c>-trait "Flaky:AzP:OS:all=true" -trait "Flaky:AzP:OS:Darwin=true"</c>
     /// </para>
     /// </example>
-    [TraitDiscoverer("Microsoft.AspNetCore.Testing.xunit.FlakyTestDiscoverer", "Microsoft.AspNetCore.Testing")]
-    [AttributeUsage(AttributeTargets.Method)]
+    [TraitDiscoverer("Microsoft.AspNetCore.Testing." + nameof(FlakyTraitDiscoverer), "Microsoft.AspNetCore.Testing")]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly)]
     public sealed class FlakyAttribute : Attribute, ITraitAttribute
     {
         /// <summary>
@@ -64,12 +64,29 @@ namespace Microsoft.AspNetCore.Testing.xunit
         /// Initializes a new instance of the <see cref="FlakyAttribute"/> class with the specified <see cref="GitHubIssueUrl"/> and a list of <see cref="Filters"/>. If no
         /// filters are provided, the test is considered flaky in all environments.
         /// </summary>
+        /// <remarks>
+        /// At least one filter is required.
+        /// </remarks>
         /// <param name="gitHubIssueUrl">The URL to a GitHub issue tracking this flaky test.</param>
-        /// <param name="filters">A list of filters that define where this test is flaky. Use values in <see cref="AzurePipelines"/> and <see cref="HelixQueues"/>.</param>
-        public FlakyAttribute(string gitHubIssueUrl, params string[] filters)
+        /// <param name="firstFilter">The first filter that indicates where the test is flaky. Use a value from <see cref="FlakyOn"/>.</param>
+        /// <param name="additionalFilters">A list of additional filters that define where this test is flaky. Use values in <see cref="FlakyOn"/>.</param>
+        public FlakyAttribute(string gitHubIssueUrl, string firstFilter, params string[] additionalFilters)
         {
+            if (string.IsNullOrEmpty(gitHubIssueUrl))
+            {
+                throw new ArgumentNullException(nameof(gitHubIssueUrl));
+            }
+
+            if (string.IsNullOrEmpty(firstFilter))
+            {
+                throw new ArgumentNullException(nameof(firstFilter));
+            }
+
             GitHubIssueUrl = gitHubIssueUrl;
-            Filters = new List<string>(filters);
+            var filters = new List<string>();
+            filters.Add(firstFilter);
+            filters.AddRange(additionalFilters);
+            Filters = filters;
         }
     }
 }
